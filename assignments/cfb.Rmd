@@ -59,7 +59,7 @@ The p-value for this regression is .01856, which shows that the results for this
 fit <- lm(differential ~ TotalTurnovers + DefYards + Penalties, data = logs)
 summary(fit)
 ```
-I used total turnovers, yards allowed and penalties as my columns that describe mistakes and bad outcomes. I don't think these overlap in any way, I took care to avoid multicollinearity. The p value of 2.2e-16 is well below .05 and shows that this isn't a random regression. The R^2 value is .4534, meaning that these three variables can explain about 45 percent of the difference in score. 
+I used total turnovers, yards allowed and penalties as my columns that describe mistakes and bad outcomes. I don't think these overlap in any way, I took care to avoid multicollinearity. They are also all negative outcomes, committing penalties, allowing yards to the opposing offense and turning the ball over are all negative outcomes that have been theorized to impact games. The p value of 2.2e-16 is well below .05 and shows that this isn't a random regression. The R^2 value is .4534, meaning that these three variables can explain about 45 percent of the difference in score. 
 
 
 ```{r}
