@@ -1,0 +1,80 @@
+---
+title: "cfb"
+output: html_document
+date: "2022-09-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+library(cfbfastR)
+```
+```{r}
+install.packages("tictoc")
+library(tictoc)
+tictoc::tic()
+pbp <- data.frame()
+seasons <- 2014:cfbfastR:::most_recent_cfb_season()
+progressr::with_progress({
+
+  pbp <- cfbfastR::load_cfb_pbp(seasons)
+})
+tictoc::toc()
+```
+
+```{r}
+glimpse(pbp)
+```
+
+```{r}
+logs <- read.csv("http://mattwaite.github.io/sportsdatafiles/footballlogs1121.csv")
+```
+
+Create a new column for point differential between the TeamScore and OpponentScore using mutate. You can use the same `logs` variable.
+
+```{r}
+logs <- logs %>% 
+  mutate(differential = TeamScore - OpponentScore)
+```
+
+Create a regression (a linear model, like we did in this chapter (Links to an external site.)) investigating whether the number of penalties can predict the score differential. In a paragraph below this code block, describe the results: what is the p-value, and does it mean the results are random? Using the r-squared value, how much of the differential can be explained by penalty yards? How useful is this regression?
+
+```{r}
+fit <- lm(differential ~ Penalties, data = logs)
+summary(fit)
+```
+The p-value for this regression is .01856, which shows that the results for this regression are not random using a significance level of .05. The R^2 value is .0002627, meaning that penalties have about a .02 percent chance of explaining the difference in score. This is a useless regression. 
+
+
+```{r}
+fit <- lm(differential ~ TotalTurnovers + DefYards + Penalties, data = logs)
+summary(fit)
+```
+I used total turnovers, yards allowed and penalties as my columns that describe mistakes and bad outcomes. I don't think these overlap in any way, I took care to avoid multicollinearity. The p value of 2.2e-16 is well below .05 and shows that this isn't a random regression. The R^2 value is .4534, meaning that these three variables can explain about 45 percent of the difference in score. 
+
+
+```{r}
+closelogs <- logs %>% 
+  filter (differential <= 7 & differential >= -7)
+fitsimple <- lm(differential ~ Penalties, data = closelogs)
+summary(fitsimple)
+```
+When you define close games as ones where the margin was seven points or less, the simple regression between penalties and score differential turns entirely random as shown by the p-value of .1063, which is considerably higher than .05. 
+```{r}
+closelogs <- logs %>% 
+  filter (differential <= 7 & differential >= -7)
+fitmultiple <- lm(differential ~ TotalTurnovers + DefYards + Penalties, data = closelogs)
+summary(fitmultiple)
+```
+When you define close games as ones where the margin was seven points or less, the multiple regression relating turnovers, yards allowed and penalties is not random, with a p value less than 2.2e-16 and obviously less than .05, The R^2 is .05, which means that we can explain about 5 perccent of the difference in the score of close games by looking at these three variables. 
+
+Penalties and point differential don't really have much of a relationship, it's not random but it's not meaningfully affecting games. I would not write this for a story other than to maybe note that we're overvaluing the impact penalties can have on games.  
