@@ -75,6 +75,6 @@ closelogs <- logs %>%
 fitmultiple <- lm(differential ~ TotalTurnovers + DefYards + Penalties, data = closelogs)
 summary(fitmultiple)
 ```
-When you define close games as ones where the margin was seven points or less, the multiple regression relating turnovers, yards allowed and penalties is not random, with a p value less than 2.2e-16 and obviously less than .05, The R^2 is .05, which means that we can explain about 5 perccent of the difference in the score of close games by looking at these three variables. 
+When you define close games as ones where the margin was seven points or less, the multiple regression relatiKg turnovers, yards allowed and penalties is not random, with a p value less than 2.2e-16 and obviously less than .05, The R^2 is .05, which means that we can explain about 5 perccent of the difference in the score of close games by looking at these three variables. 
 
 Penalties and point differential don't really have much of a relationship, it's not random but it's not meaningfully affecting games. I would not write this for a story other than to maybe note that we're overvaluing the impact penalties can have on games.  
