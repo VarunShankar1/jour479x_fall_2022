@@ -22,7 +22,20 @@ pxp <- read_rds("~/Documents/GitHub/jour479x_fall_2022/data/play_by_play_2022.rd
 Filtering for McLaurin
 ```{r}
 mclaurinplays <- pxp %>% 
-  filter(game_half == "Half1", play_type == "pass", str_detect(desc, "McLaurin")
-)
+  filter(game_half == "Half1", play_type == "pass", posteam == "WAS", !is.na(receiver), receiver == "T.McLaurin")
+```
+
+```{r}
+comparison <- pxp %>% 
+  filter(rusher == "Mi.Carter" | rusher == "Br.Hall" | receiver == "Mi.Carter" | receiver == "Br.Hall") %>% 
+  group_by(rusher, receiver) %>% 
+  summarise(total = sum(yards_gained))
+```
+
+```{r}
+set.seed(1234)
+simulations <- rbinom(n=1000, size=210, prob=.372)
+table(simulations)
+hist(simulations)
 ```
 
