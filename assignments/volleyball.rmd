@@ -1,0 +1,46 @@
+---
+title: "volleyball"
+output: html_document
+date: "2022-10-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+vbdata <- read.csv("https://raw.githubusercontent.com/dwillis/NCAAWomensVolleyballData/main/data/ncaa_womens_volleyball_matchstats_2022.csv")
+```
+
+```{r}
+sumvbdata <- vbdata %>% 
+  group_by(team) %>% 
+  summarize(totalsets = sum(s), totalassists = sum(assists), avghitpct = mean(hit_pct),   totalkills = sum(kills), totalblocks = sum(block_solos)) %>% 
+  mutate(
+    kills_per_set = totalkills/totalsets,
+    assists_per_set = totalassists/totalsets,
+    blocks_per_set = totalblocks/totalsets
+  )
+```
+
+```{r}
+teamzscores <- sumvbdata %>%
+  mutate(
+    killszscore = as.numeric(scale(kills_per_set, center = TRUE, scale = TRUE)),
+    assistzscore = as.numeric(scale(assists_per_set, center = TRUE, scale = TRUE)),
+    hitpercentagezscore = as.numeric(scale(avghitpct, center = TRUE, scale = TRUE)),
+    blockzscore = as.numeric(scale(blocks_per_set, center = TRUE, scale = TRUE)),
+    TotalZscore = killszscore + assistzscore + hitpercentagezscore + blockzscore
+  ) %>% ungroup() %>% 
+  arrange(desc(TotalZscore))
+teamzscores
+
+```
+The top five teams looking at the zscores of solo blocks per set, kills per set, assists per set and hit percentage are Princeton, Western Kentucky, UCF, Jacksonville State and Florida Atlantic. The Terps are 233rd in this metric, around teams like New Hampshire, Stony Brook and Saint Mary's. 
