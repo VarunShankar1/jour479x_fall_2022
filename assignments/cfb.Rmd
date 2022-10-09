@@ -44,6 +44,7 @@ Create a new column for point differential between the TeamScore and OpponentSco
 ```{r}
 logs <- logs %>% 
   mutate(differential = TeamScore - OpponentScore)
+
 ```
 
 Create a regression (a linear model, like we did in this chapter (Links to an external site.)) investigating whether the number of penalties can predict the score differential. In a paragraph below this code block, describe the results: what is the p-value, and does it mean the results are random? Using the r-squared value, how much of the differential can be explained by penalty yards? How useful is this regression?
@@ -78,3 +79,10 @@ summary(fitmultiple)
 When you define close games as ones where the margin was seven points or less, the multiple regression relatiKg turnovers, yards allowed and penalties is not random, with a p value less than 2.2e-16 and obviously less than .05, The R^2 is .05, which means that we can explain about 5 perccent of the difference in the score of close games by looking at these three variables. 
 
 Penalties and point differential don't really have much of a relationship, it's not random but it's not meaningfully affecting games. I would not write this for a story other than to maybe note that we're overvaluing the impact penalties can have on games.  
+
+
+```{r}
+goaltogoplays <- pbp %>% 
+  filter(year == 2022, pos_team == "Maryland", yards_to_goal < 5, down == (3 | 4))
+```
+

@@ -1,0 +1,39 @@
+---
+title: "background.rmd"
+output: html_document
+date: "2022-10-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+1. When we look at NFL quarterbacks, they are often very very bad as rookies. What are the things we can examine in the stats of those rookies that are good predictors for future success? Are there specific statistics that are good indicators for natural talent and good processing ability that are harbingers of future success? Limiting this to players on 
+
+Does that data already exist? Can you get it?
+
+Essentially, I'd like to find two things out: what are the pure statistical inputs for rookie quarterbacks that are indicative of future performance. For that I need play by play data, completions, yards, TDs, etc. This information would ideally be in a play by play format to break down by game situation as well (time left in game/score effects).
+Do you need assistance in getting it?
+
+We have one play by play dataframe we used from the 2022 season, it would be great if that data extended backward. 
+
+What time frame do you want/need data from?
+
+I'd do since 2012, that was when the league went into a different direction of tailoring offenses to quarterbacks, something we saw with players like RG3, Russell Wilson, and Colin Kaepernick. 
+
+Will you have to improve or augment the data in order to answer your question? If so, how?
+
+Nothing in particular other than filtering for Rookies (doing so by just finding the names from the draft years).
+
+Are there other examples of this kind of work (specific or general)? If so, provide them.
+There's this article on what the effects are for quarterbacks depending on how much they were played as rookies.
+https://www.theringer.com/nfl/2021/9/30/22700483/rookie-quarterback-first-start-development-timeline
+This one did essentially what I'm doing but with draft prospects to model NFL success. https://www.the33rdteam.com/qb-hub/using-statistical-modeling-to-rank-quarterback-prospects/
+```{r}
+pxp22 <- read_rds("~/Documents/GitHub/jour479x_fall_2022/data/play_by_play_2022.rds") 
+```
+
