@@ -8,7 +8,6 @@ date: "2022-10-09"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(nflreadr)
-library(ggplot2)
 ```
 
 ## R Markdown
@@ -53,19 +52,21 @@ pxp12 <- load_pbp(2012)
 tenyeardata <- bind_rows(pxp21, pxp20, pxp19, pxp19, pxp17, pxp16, pxp15, pxp14, pxp13, pxp12)
 ```
 
-This data goes from 2012 to 2021 and has an astonishing 485453 rows. There are 372 variables here that tell you much of what you need to know to explain what happened on the play. 
+This data goes from 2012 to 2021 and has an astonishing 485453 rows. There are 372 variables here that tell you much of what you need to know to explain what happened on the play. I will only be looking at quarterbacks drafted in the first three rounds of the NFL draft and can find that day myself from research to isolate those quarterbacks. 
 
 ```{r}
 trevorlawrencedata <- tenyeardata %>% 
+  game_date <- as.Date(game_date, "%m/%d/%Y") %>% 
   filter(passer_player_name == "T.Lawrence" | rusher_player_name == "T.Lawrence") %>% 
   group_by(game_id, game_date) %>% 
-  summarize(totalyds = sum(yards_gained))
+  summarize(totalyds = sum(yards_gained))  
+
+
 
 ```
 
 ```{r}
 ggplot() + 
-  geom_line(data=trevorlawrencedata, aes(x=game_date, y=totalyds, color="green") +
-                scale_y_continuous(limits = c(0, .7))
+  geom_line(data=trevorlawrencedata, aes(x=game_data, y=totalyds, color="red")
 ```
-
+I could not get this line graph to work, not sure why. 
