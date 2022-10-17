@@ -6,6 +6,9 @@ date: "2022-10-09"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(nflreadr)
+library(ggplot2)
 ```
 
 ## R Markdown
@@ -34,6 +37,35 @@ There's this article on what the effects are for quarterbacks depending on how m
 https://www.theringer.com/nfl/2021/9/30/22700483/rookie-quarterback-first-start-development-timeline
 This one did essentially what I'm doing but with draft prospects to model NFL success. https://www.the33rdteam.com/qb-hub/using-statistical-modeling-to-rank-quarterback-prospects/
 ```{r}
-pxp22 <- read_rds("~/Documents/GitHub/jour479x_fall_2022/data/play_by_play_2022.rds") 
+pxp21 <- load_pbp(2021)
+pxp20 <- load_pbp(2020)
+pxp19 <- load_pbp(2019)
+pxp18 <- load_pbp(2018)
+pxp17 <- load_pbp(2017)
+pxp16 <- load_pbp(2016)
+pxp15 <- load_pbp(2015)
+pxp14 <- load_pbp(2014)
+pxp13 <- load_pbp(2013)
+pxp12 <- load_pbp(2012)
+```
+
+```{r}
+tenyeardata <- bind_rows(pxp21, pxp20, pxp19, pxp19, pxp17, pxp16, pxp15, pxp14, pxp13, pxp12)
+```
+
+This data goes from 2012 to 2021 and has an astonishing 485453 rows. There are 372 variables here that tell you much of what you need to know to explain what happened on the play. 
+
+```{r}
+trevorlawrencedata <- tenyeardata %>% 
+  filter(passer_player_name == "T.Lawrence" | rusher_player_name == "T.Lawrence") %>% 
+  group_by(game_id, game_date) %>% 
+  summarize(totalyds = sum(yards_gained))
+
+```
+
+```{r}
+ggplot() + 
+  geom_line(data=trevorlawrencedata, aes(x=game_date, y=totalyds, color="green") +
+                scale_y_continuous(limits = c(0, .7))
 ```
 
