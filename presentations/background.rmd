@@ -25,7 +25,7 @@ We have one play by play dataframe we used from the 2022 season, it would be gre
 
 What time frame do you want/need data from?
 
-I'd do since 2012, that was when the league went into a different direction of tailoring offenses to quarterbacks, something we saw with players like RG3, Russell Wilson, and Colin Kaepernick. 
+I'd do since 1999, that's all the data I have.  
 
 Will you have to improve or augment the data in order to answer your question? If so, how?
 
@@ -35,38 +35,91 @@ Are there other examples of this kind of work (specific or general)? If so, prov
 There's this article on what the effects are for quarterbacks depending on how much they were played as rookies.
 https://www.theringer.com/nfl/2021/9/30/22700483/rookie-quarterback-first-start-development-timeline
 This one did essentially what I'm doing but with draft prospects to model NFL success. https://www.the33rdteam.com/qb-hub/using-statistical-modeling-to-rank-quarterback-prospects/
-```{r}
-pxp21 <- load_pbp(2021)
-pxp20 <- load_pbp(2020)
-pxp19 <- load_pbp(2019)
-pxp18 <- load_pbp(2018)
-pxp17 <- load_pbp(2017)
-pxp16 <- load_pbp(2016)
-pxp15 <- load_pbp(2015)
-pxp14 <- load_pbp(2014)
-pxp13 <- load_pbp(2013)
-pxp12 <- load_pbp(2012)
-```
 
 ```{r}
-tenyeardata <- bind_rows(pxp21, pxp20, pxp19, pxp19, pxp17, pxp16, pxp15, pxp14, pxp13, pxp12)
+game_by_game_stats <- load_player_stats(
+  seasons = TRUE,
+  stat_type = c("offense"),
+  file_type = getOption("nflreadr.prefer", default = "rds")
+)
+
+draft_status <- load_players(file_type = getOption("nflreadr.prefer", default = "rds")) %>% 
+  select(display_name, gsis_id, position, draft_number, draft_round, rookie_year)
 ```
-
-This data goes from 2012 to 2021 and has an astonishing 485453 rows. There are 372 variables here that tell you much of what you need to know to explain what happened on the play. I will only be looking at quarterbacks drafted in the first three rounds of the NFL draft and can find that day myself from research to isolate those quarterbacks. 
-
+Alright so this is giving me all player game-level stats from 1999 onward for NFL players and their draft status in a separate dataframe. Let's see what I can do.
 ```{r}
-trevorlawrencedata <- tenyeardata %>% 
-  game_date <- as.Date(game_date, "%m/%d/%Y") %>% 
-  filter(passer_player_name == "T.Lawrence" | rusher_player_name == "T.Lawrence") %>% 
-  group_by(game_id, game_date) %>% 
-  summarize(totalyds = sum(yards_gained))  
-
-
-
+total_stats <- game_by_game_stats %>% 
+  filter(!is.na(passing_epa)) %>% 
+  group_by(player_display_name, player_id) %>% 
+  summarize(total_epa = sum(passing_epa), career_games = n())
 ```
-
+First thing first, I excluded all players who had NA passing epa so I could then add it up for all players. I also summed up players' total games.
 ```{r}
-ggplot() + 
-  geom_line(data=trevorlawrencedata, aes(x=game_data, y=totalyds, color="red")
+game_by_game_stats_with_draft <- game_by_game_stats %>% inner_join(draft_status, by=c("player_id"="gsis_id")) 
+
+
+game_by_game_stats_with_draft <- game_by_game_stats_with_draft %>% 
+    filter(!is.na(rookie_year))
+
+rookie_years_only <- game_by_game_stats_with_draft %>% filter(season == rookie_year, draft_number < 100, position.x == "QB", season_type == "REG")
 ```
-I could not get this line graph to work, not sure why. 
+I join the game by game stats with the draft status and filter out players who don't have a rookie year listed.I then filter to get the regular season game logs for quarterbacks in their rookie years who were drafted in the top 100 picks. 
+```{r}
+rookie_years_only <- rookie_years_only %>% 
+  group_by(player_display_name, player_id) %>% 
+  summarize(rookie_games = n(), completion_perc = sum(completions)/sum(attempts), pass_yards = sum(passing_yards), pass_TD = sum(passing_tds), ints = sum(interceptions), sacks_taken = sum(sacks), pass_air_yards = sum(passing_air_yards), pass_first_downs = sum(passing_first_downs), rookie_epa = sum(passing_epa))
+
+final_data_table <- rookie_years_only %>% left_join(total_stats, by=c("player_id", "player_display_name")) 
+
+final_data_table <- final_data_table %>% left_join(draft_status, by=c("player_id"="gsis_id")) 
+
+final_data_table <- final_data_table %>% 
+  filter(rookie_games > 10) %>% 
+  mutate(epapergame = total_epa/career_games)
+```
+I use that dataframe to make a dataframe that has the following statistics summarized for the rookie year top-100 pick quaterbacks.
+- games played, completion percentage, pass yards, pass touchdowns, sacks taken, pass air yards, passing first downs, and rookie year epa. 
+I then merged that dataframe with the statistics for the quarterbacks' careers and then that with the draft status again. Finally, I filtered out players who didn't play at least 10 games in their rookie season to eliminate small sample size issues and then divided the total epa by career games to make it a rate statistic.
+```{r}
+comp_perc_fit <- lm(epapergame ~ completion_perc, data = final_data_table)
+summary(comp_perc_fit)
+
+passyds_fit <- lm(epapergame ~ pass_yards, data = final_data_table)
+summary(passyds_fit)
+
+passtds_fit <- lm(epapergame ~ pass_TD, data = final_data_table)
+summary(passtds_fit)
+
+int_fit <- lm(epapergame ~ ints, data = final_data_table)
+summary(int_fit)
+
+
+sacks_fit <- lm(epapergame ~ sacks_taken, data = final_data_table)
+summary(sacks_fit)
+
+air_yards_fit <- lm(epapergame ~ pass_air_yards, data = final_data_table)
+summary(air_yards_fit)
+
+first_downs_fit <- lm(epapergame ~ pass_first_downs, data = final_data_table)
+summary(first_downs_fit)
+
+rookie_epa_fit <- lm(epapergame ~ rookie_epa, data = final_data_table)
+summary(rookie_epa_fit)
+```
+Okay so, lot of stuff happened here. I ran regressions for each of the rookie year stats I gathered and the career epa per game and looked at the r^2 values. Let's review what we saw
+Completion percentage
+- p-value is less than .05 so this is a statistically significant relationship, but R^2 is just .15, meaning that rookie year completion percentage can only explain about 15 percent of career epa/game.
+Pass Yards
+- Again, p-value is less than .05, making this statistically signifcant. R^2 is .11, even worse than completion percentage. Yikes
+Pass TDs
+- P value is less than .05, makes this statistically significant. However, R^2 here is .1761, the highest so far but still pretty low.
+Ints
+- Not a statistically sig relationship. Doesn't seem to matter if qbs throw a bunch of picks as rookies (we call this the Peyton Manning theory)
+Sacks
+- p-value below .05, .17 R^2 value, around the same as passing touchdowns.
+Air-yards
+- Not a statistically sig relationship
+Passing first downs
+- Statistically signifcant relationship but only a R^2 value of .11
+Rookie year EPA
+- This is the best relationship you have, it's statistically signifcant and has an R^2 of .65. Now, it's slightly cheating because you're comparing the same stat, but it does have some value. What you see is that there's a relationship between rookie year success and the success for the rest of the career and that there is some extrapolation you can do from a players' rookie year EPA outward to see what to expect from them moving forward. 
