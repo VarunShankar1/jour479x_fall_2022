@@ -123,3 +123,4 @@ Passing first downs
 - Statistically signifcant relationship but only a R^2 value of .11
 Rookie year EPA
 - This is the best relationship you have, it's statistically signifcant and has an R^2 of .65. Now, it's slightly cheating because you're comparing the same stat, but it does have some value. What you see is that there's a relationship between rookie year success and the success for the rest of the career and that there is some extrapolation you can do from a players' rookie year EPA outward to see what to expect from them moving forward. 
+
