@@ -8,6 +8,7 @@ date: "2022-11-01"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(nflreadr)
+library(ggalt)
 ```
 
 ## R Markdown
@@ -133,8 +134,24 @@ Let's go back to the top with rookie year passing epa. Let's be clear, quarterba
 positive_rookies <- final_data_table %>% 
   filter(rookie_epa > 0)
 positive_rookies
+```
+That gives us 13 quarterbacks, let's see how they look in career EPA.
+```{r}
+ggplot() + 
+  geom_lollipop(
+    data=positive_rookies, 
+    aes(y=reorder(player_display_name
+, epapergame), x=epapergame), 
+    horizontal = TRUE
+    ) + 
+  theme_minimal() + 
+  labs(title = "Most positive rookie quarterbacks end up as productive starters", y="QB Name")
+```
 
+```{r}
 summary(positive_rookies$total_epa)
+```
+
 ```
 ```{r}
 qb_stats <- total_stats %>% 
@@ -225,4 +242,3 @@ ggplot() +
     data=final_data_table, 
     aes(x=rookie_epa, y=epapergame, label=player_display_name))  
 ```
-
