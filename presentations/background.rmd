@@ -8,6 +8,7 @@ date: "2022-10-09"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(nflreadr)
+library(ggrepel)
 ```
 
 ## R Markdown
@@ -51,7 +52,7 @@ Alright so this is giving me all player game-level stats from 1999 onward for NF
 total_stats <- game_by_game_stats %>% 
   filter(!is.na(passing_epa)) %>% 
   group_by(player_display_name, player_id) %>% 
-  summarize(total_epa = sum(passing_epa), career_games = n())
+  summarize(total_epa = sum(passing_epa), career_games = n(), carr_pass_yards = sum(passing_yards), carr_pass_TD = sum(passing_tds))
 ```
 First thing first, I excluded all players who had NA passing epa so I could then add it up for all players. I also summed up players' total games.
 ```{r}
@@ -123,4 +124,97 @@ Passing first downs
 - Statistically signifcant relationship but only a R^2 value of .11
 Rookie year EPA
 - This is the best relationship you have, it's statistically signifcant and has an R^2 of .65. Now, it's slightly cheating because you're comparing the same stat, but it does have some value. What you see is that there's a relationship between rookie year success and the success for the rest of the career and that there is some extrapolation you can do from a players' rookie year EPA outward to see what to expect from them moving forward. 
+```{r}
+ggplot() + 
+  geom_point(data=final_data_table, aes(x=rookie_epa, y=epapergame)) +
+  geom_smooth(data=final_data_table, aes(x=rookie_epa, y=epapergame), method="lm")   +
+  labs(title="EPA per game is predictive of future success in same metric", subtitle="Performing well in rookie year expected points added bodes well for a quarterback's future.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 8), 
+    plot.subtitle = element_text(size=10), 
+    panel.grid.minor = element_blank()
+    )  +
+  geom_text_repel(
+    data=final_data_table, 
+    aes(x=rookie_epa, y=epapergame, label=player_display_name))  
+ggsave(
+  "rook_epa_reg.pdf",
+  plot = last_plot(),
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = NA,
+  height = NA,
+  units = c("in", "cm", "mm", "px"),
+  dpi = 300,
+  limitsize = TRUE,
+  bg = NULL,
+)
+```
+passtds_fit <- lm(epapergame ~ pass_TD, data = final_data_table)
+summary(passtds_fit)
+```{r}
+ggplot() + 
+  geom_point(data=final_data_table, aes(x=pass_TD, y=epapergame)) +
+  geom_smooth(data=final_data_table, aes(x=pass_TD, y=epapergame), method="lm") + 
+  ylim(-10,10)  +
+  xlim(0, 35) +
+  labs(title="Rookie year pass touchdowns don't predict future success", subtitle="How many passing touchdowns a QB throws as a rookie doesn't correlate well to his career EPA/game.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 8), 
+    plot.subtitle = element_text(size=10), 
+    panel.grid.minor = element_blank()
+    )  +
+  geom_text_repel(
+    data=final_data_table, 
+    aes(x=pass_TD, y=epapergame, label=player_display_name))  
+ggsave(
+  "pass_td_reg.pdf",
+  plot = last_plot(),
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = NA,
+  height = NA,
+  units = c("in", "cm", "mm", "px"),
+  dpi = 300,
+  limitsize = TRUE,
+  bg = NULL,
+)
+```
+```{r}
+funsiesfit <- lm(carr_pass_TD ~ rookie_epa, data = final_data_table)
+summary(funsiesfit)
+```
+
+```{r}
+ggplot() + 
+  geom_point(data=final_data_table, aes(x=rookie_epa, y=carr_pass_TD)) +
+  geom_smooth(data=final_data_table, aes(x=rookie_epa, y=carr_pass_TD), method="lm") + 
+  labs(title="", subtitle="Good rookies throw a lot of career touchdowns", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 8), 
+    plot.subtitle = element_text(size=10), 
+    panel.grid.minor = element_blank()
+    )  +
+  geom_text_repel(
+    data=final_data_table, 
+    aes(x=rookie_epa, y=carr_pass_TD, label=player_display_name))  
+ggsave(
+  "filename.pdf",
+  plot = last_plot(),
+  device = NULL,
+  path = NULL,
+  scale = 1,
+  width = NA,
+  height = NA,
+  units = c("in", "cm", "mm", "px"),
+  dpi = 300,
+  limitsize = TRUE,
+  bg = NULL,
+)
+```
 
