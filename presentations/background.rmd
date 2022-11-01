@@ -128,7 +128,7 @@ Rookie year EPA
 ggplot() + 
   geom_point(data=final_data_table, aes(x=rookie_epa, y=epapergame)) +
   geom_smooth(data=final_data_table, aes(x=rookie_epa, y=epapergame), method="lm")   +
-  labs(title="EPA per game is predictive of future success in same metric", subtitle="Performing well in rookie year expected points added bodes well for a quarterback's future.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
+  labs(title="EPA per game correlates with future success in same metric", subtitle="Rookie NFL QBs who accumulate passing EPA generally perform well in career EPA per game.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
     axis.title = element_text(size = 8), 
@@ -160,7 +160,7 @@ ggplot() +
   geom_smooth(data=final_data_table, aes(x=pass_TD, y=epapergame), method="lm") + 
   ylim(-10,10)  +
   xlim(0, 35) +
-  labs(title="Rookie year pass touchdowns don't predict future success", subtitle="How many passing touchdowns a QB throws as a rookie doesn't correlate well to his career EPA/game.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
+  labs(title="Throwing touchdowns in first year doesn't correlate with future success", subtitle="How many passing touchdowns a QB throws as a rookie doesn't correlate well to his career EPA/game.", caption="Source: NFLR Stats | By Varun Shankar")  + theme_minimal() +
   theme(
     plot.title = element_text(size = 16, face = "bold"),
     axis.title = element_text(size = 8), 
@@ -171,7 +171,7 @@ ggplot() +
     data=final_data_table, 
     aes(x=pass_TD, y=epapergame, label=player_display_name))  
 ggsave(
-  "pass_td_reg.pdf",
+  "pass_td_reg",
   plot = last_plot(),
   device = NULL,
   path = NULL,
