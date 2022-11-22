@@ -80,6 +80,8 @@ final_data_table <- final_data_table %>% left_join(draft_status, by=c("player_id
 
 final_data_table <- final_data_table %>% 
   filter(rookie_games > 10)
+
+mutate(is.NA(Day1)=0)
 ```
 Now, let's run a regression between the following stats as the independent variable:
 completion percentage, passing yards, passing touchdowns, interceptions, sacks taken, passing air yards, passing first downs and rookie year passing EPA
