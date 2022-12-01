@@ -1,17 +1,18 @@
 ```{r}
 library(tidyverse)
 library(postmastr)
-library(usdata)
+library(rvest)
+library(janitor)
 ```
 
 ```{r}
-wbb_rosters23 <- read_csv("../data/rosters_2022-23.csv")
+wbb_rosters23 <- read_csv("https://github.com/dwillis/wbb-rosters/raw/main/rosters_2022-23.csv")
 ```
 
 # Teams That Have Roster Data
 
 ```{r}
-teams <- read_csv("../data/teams.csv")
+teams <- read_csv("https://raw.githubusercontent.com/dwillis/jour479x_fall_2022/main/data/teams.csv") %>% select(-url, -twitter, -stats_name, -private)
 
 roster_teams <- wbb_rosters23 %>% distinct(ncaa_id) %>% mutate(has_roster = 1)
 
@@ -20,42 +21,40 @@ teams <- teams %>%
 
 teams_without_rosters <- teams %>% 
   filter(is.na(roster))
+
+wbb_rosters23 <- wbb_rosters23 %>% 
+  left_join(teams, by=c("ncaa_id", "team")) 
 ```
-
-
-# Things to Clean
-
-* Drop where Name is NA
-* Standardize Positions
-* Standardizing State (would need to extract)
-* Standardizing Year (dealing with redshirts & also grad students)
-* Standardizing Height (5'10" or 5-10)
-
-# Columns to Add
-
-* State
-* Country
-* Height in inches
-
 # Height Cleaning
 
-* Still need to add a single column with total inches using feet and inches.
-
 ```{r}
-wbb_rosters23 <- wbb_rosters23 %>% mutate(
-  height = str_replace(height, '-', "'")
-)
-wbb_rosters23 <- wbb_rosters23 %>% separate(col=height, into=c("height_ft", "height_in"), sep="'", extra="merge")
-wbb_rosters23 <- wbb_rosters23 %>% mutate(height_in = str_replace(height_in, '"', " "))
-wbb_rosters23$height <- paste(wbb_rosters23$height_ft, "-", wbb_rosters23$height_in)
+wbb_rosters23 <- wbb_rosters23 %>% 
+  mutate(height_clean = str_replace(height, "'", '-')) %>% 
+  mutate(height_clean = str_replace(height_clean, "’", '-')) %>% 
+  mutate(height_clean = str_replace(height_clean, "''", '')) %>% 
+  mutate(height_clean = str_replace(height_clean, '"', '')) %>%
+  separate(height_clean, c('height_ft', 'height_in'), sep="-", extra="merge") %>% 
+  mutate(height_ft = as.numeric(height_ft), height_in = as.numeric(height_in)) %>%
+  mutate(total_inches = (height_ft*12)+height_in)
+
+
+wbb_rosters23 %>% 
+  group_by(total_inches) %>% 
+  summarise(
+    total = n()
+  )
 ```
 
+We've got 98 with NA heights.
 
+```{r}
+wbb_rosters23 %>% filter(is.na(total_inches)) %>% group_by(team) %>% summarize(count = n()) %>% arrange(desc(count))
+```
 # Positions Cleaning
 
 ```{r}
 
-positions_cleaned <- read_csv("../data/wbb_positions.csv") %>%
+positions_cleaned <- read_csv("https://raw.githubusercontent.com/dwillis/jour479x_fall_2022/main/data/wbb_positions.csv") %>%
   select(-count)
 
 wbb_rosters23 <- wbb_rosters23 %>% inner_join(positions_cleaned, by = "position") 
@@ -84,7 +83,7 @@ wbb_rosters23 %>% group_by(secondary_position) %>% summarise(count = n()) %>% ar
 # Years Cleaning
 
 ```{r}
-years_cleaned <- read_csv("../data/yearscleaned.csv")
+years_cleaned <- read_csv("https://raw.githubusercontent.com/dwillis/jour479x_fall_2022/main/data/yearscleaned.csv")
 
 wbb_rosters23 <- inner_join(wbb_rosters23, years_cleaned) %>% rename(year_clean = `year-clean`)
 
@@ -169,13 +168,137 @@ wbb_rosters23 <- wbb_rosters23 %>% mutate(homestate=str_trim(homestate), homesta
 Take the list of FIBA nations (https://www.fiba.basketball/rankingwomen) and make a list or dataframe of them, then compare that to the values in the `homestate` column generated above and populate a new column for country.
 
 ```{r}
-sapply(wbb_rosters23, function(x) sum(is.na(x)))
+fibaurl <- "https://www.fiba.basketball/rankingwomen"
+nations <- fibaurl %>%
+  read_html() %>%
+  html_nodes(xpath = '//*[@id="fiba_ranking_table_wrapper"]/table') %>%
+  html_table()
+nations_df <- nations[[1]]
+wbb_rosters23 <- mutate(wbb_rosters23, country = case_when(!is.na(pm.state) ~ "USA"))
+
+
+wbb_rosters23 <- wbb_rosters23 %>% mutate(temp = sapply(strsplit(hometown_cleaned, ", ", fixed=TRUE), tail, 1))
+
+wbb_rosters23 <- mutate(wbb_rosters23, country = case_when(temp %in% c('BC', 'QUEBEC', 'BRITISH COLUMBIA', 'ALBERTA', 'ONTARIO') ~ "CANADA", TRUE ~ country))
+
+nations_df$Country <- toupper(nations_df$Country)
+
+
+
+added_nations <- data.frame(Worldrank=c(0, 0, 0, 0),
+                  Country=c('ENGLAND', 'RUSSIA', 'SCOTLAND', 'NORTHERN IRELAND'),
+                  Zonerank=c(0, 0, 0, 0),
+                  IOC=c('', '', '', ''),
+                  "Current points"=c(0, 0, 0, 0),
+                  "+/- Rank *"=c(0, 0, 0, 0),
+                  check.names = FALSE)
+nations_df <- rbind(nations_df, added_nations)
+
+
+wbb_rosters23 <- left_join(wbb_rosters23, nations_df, by=c('temp'='Country'))
+
+wbb_rosters23 <- mutate(wbb_rosters23, country = case_when((!is.na(Worldrank) & is.na(country)) ~ temp, is.na(Worldrank) &  !is.na(country) ~ country, country == "USA" ~ "USA"))
+
+wbb_rosters23 <- subset(wbb_rosters23, select = -c(Worldrank,Zonerank,IOC,`Current points`, `+/- Rank *`) )
+
+wbb_rosters23 %>% filter(is.na(country)) %>% group_by(temp) %>% summarise(count=n()) %>% arrange(desc(count))
 ```
-Useless columns: hs_clean, player_id
-Ones to look at: pm.address, hometown cleaned, jersey, heights
-hometown cleaned (and subsuquently pm.address), jersey can be backfilled. height is case-by-case. The six cases where a team has height ft and not height in needs to be split, the feet and inches are still together for some reason. 
+
 ```{r}
-wbb_rosters23 %>% 
-  filter(is.na(hometown_cleaned))
+html <- "https://www.aicyellowjackets.com/sports/wbkb/2022-23/roster?view=list" %>% 
+  read_html() %>% 
+  html_table()
+
+americaninternational <- html[[1]]
 ```
+American international is a difficult scrape, lower on priority list
+```{r}
+html <- "https://assumptiongreyhounds.com/sports/womens-basketball/roster" %>% 
+  read_html() %>% 
+  html_table()
+
+assumption_roster <- html[[3]] 
+
+assumption_roster <- assumption_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1))
+```
+```{r}
+html <- "https://bsubeavers.com/sports/womens-basketball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+bemidji_state_roster <- html[[3]] 
+```
+```{r}
+html <- "https://www.bethanybison.com/sports/wbkb/2022-23/roster?view=list" %>% 
+  read_html() %>% 
+  html_table()
+
+bethany_college_roster <- html[[1]] 
+```
+Bethany College is a difficult scrape, lower on priority list
+Brandeis doesn't have 22-23 roster listed
+```{r}
+html <- "https://bridgewatereagles.com/sports/womens-basketball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+bridgewater_roster <- html[[3]] 
+bridgewater_roster <- bridgewater_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1))
+```
+```{r}
+html <- "https://gocaltech.com/sports/womens-basketball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+caltech_roster <- html[[3]] 
+caltech_roster <- caltech_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1)) 
+```
+```{r}
+html <- "https://calvinknights.com/sports/womens-basketball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+calvin_roster <- html[[3]] 
+calvin_roster <- calvin_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1)) 
+```
+```{r}
+html <- "https://dickinsonathletics.com/sports/wbball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+dickinson_roster <- html[[3]] 
+dickinson_roster <- dickinson_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1)) 
+```
+```{r}
+html <- "https://dickinsonathletics.com/sports/wbball/roster?view=2" %>% 
+  read_html() %>% 
+  html_table()
+
+distcolumbia_roster <- html[[3]] 
+distcolumbia_roster <- distcolumbia_roster %>% 
+  mutate(HighSchool = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), tail, 1)) %>% 
+  mutate(Hometown = sapply(strsplit(`Hometown / High School`, " / ", fixed=TRUE), head, 1)) 
+```
+```{r}
+html <- "https://gustavus.edu/athletics/wbb/roster/" %>% 
+  read_html() %>% 
+  html_table()
+
+gustavus_adolphus_roster <- html[[1]] 
+
+gustavus_adolphus_roster <- gustavus_adolphus_roster %>% 
+  clean_names() %>% 
+  mutate(full_name = paste(first_name, last_name))
+```
+
 
