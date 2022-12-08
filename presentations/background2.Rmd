@@ -1,0 +1,177 @@
+---
+title: "presentation2"
+output: html_document
+date: "2022-11-21"
+---
+
+outline for final notebook
+- graphs showing
+ pace difference for NBA and CBB
+ efficiency difference (3pt shooting, assist rate, points per 60) for NBA and CBB
+  broken down for p5 and non p5
+- graph showing where shots come from (3pt rate and ft rate)
+- analyze CBB data
+  biggest differences across conferences/p5 v non p5 (if there are none that's interesting as well)
+  highlight any wild outliers that are just fun to look at
+- if wins 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+library(lubridate)
+```
+2012-2018 nba
+cbb 2014-2022
+
+2014-2018
+```{r}
+CBBboxscores <- read_csv("https://dwillis.github.io/sports-data-files/cbblogs1522.csv")
+CBBboxscores <- CBBboxscores %>% 
+  mutate(year = year(Date)) %>% 
+  filter(year >= 2014, year <= 2018) %>% 
+  mutate(wins = case_when(
+    str_detect("W", W_L) ~ 1,
+    str_detect("L", W_L) ~ 0
+  )
+)
+NBAboxscores <- read_csv("~/Documents/GitHub/jour479x_fall_2022/data/2012-18_officialBoxScore.csv") 
+
+NBAboxscores <- NBAboxscores %>% mutate(year = year(gmDate)) %>% 
+    filter(year >= 2014, year <= 2018)
+```
+Let's get a statistical profile for these games that inclues the following: total points scored, total shot attempts, shooting percentage, three-point rate, free throw rate, three-point shooting percentage, assists per made shot, assists to TO ratio, steals, blocks and fouls
+```{r}
+cols <- c("TeamFG", "TeamScore", "TeamFGA", "Team3P", "Team3PA")
+CBBboxscores <- CBBboxscores %>% drop_na(any_of(cols))
+  
+nba_stat_profile <- NBAboxscores %>% 
+  summarize(games = n(), points_per_60min = sum(teamPTS)/games *(60/48), total_shot_attempts_per_60 = sum(teamFGA)/games *(60/48), shooting_perc = sum(teamFGM)/sum(teamFGA), three_rate = sum(team3PA)/sum(teamFGA), free_throw_rate = sum(teamFTA)/sum(teamFGA), three_point_perc = sum(team3PM)/sum(team3PA), assist_perc = sum(teamAST)/sum(teamFGM))
+
+cbb_stat_profile <- CBBboxscores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+```
+
+```{r}
+p5 <- c("Big Ten", "Big 12", "SEC", "ACC", "Pac-12")
+
+p5_box_scores <- CBBboxscores %>% 
+  filter(Conference == p5)
+
+nonp5_box_scores <- CBBboxscores %>% 
+  filter(Conference != p5)
+
+b10_box_scores <- CBBboxscores %>% 
+  filter(Conference == "Big Ten")
+
+acc_box_scores <- CBBboxscores %>% 
+  filter(Conference == "ACC")
+
+b12_box_scores <- CBBboxscores %>% 
+  filter(Conference == "Big 12")
+
+pac12_box_scores <- CBBboxscores %>% 
+  filter(Conference == "Pac-12")
+
+sec_box_scores <- CBBboxscores %>% 
+  filter(Conference == "SEC")
+
+p5_stat_profile <- p5_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+nonp5_stat_profile <- nonp5_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+b10_stat_profile <- b10_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+b12_stat_profile <- b12_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+acc_stat_profile <- acc_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+sec_stat_profile <- sec_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+
+pac12_stat_profile <- pac12_box_scores %>% 
+  summarize(games = n(), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG))
+```
+
+```{r}
+cbb_stat_profile <- cbb_stat_profile %>% 
+  mutate(name = "CBB") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+nba_stat_profile <- nba_stat_profile %>% 
+  mutate(name = "NBA") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+nonp5_stat_profile <- nonp5_stat_profile %>% 
+  mutate(name = "Non-Power Five") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+p5_stat_profile <- p5_stat_profile %>% 
+  mutate(name = "Power Five") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+b10_stat_profile <- b10_stat_profile %>% 
+  mutate(name = "Big Ten") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+b12_stat_profile <- b12_stat_profile %>% 
+  mutate(name = "Big 12") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+sec_stat_profile <- sec_stat_profile %>% 
+  mutate(name = "SEC") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+pac12_stat_profile <- pac12_stat_profile %>% 
+  mutate(name = "PAC-12") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+acc_stat_profile <- acc_stat_profile %>% 
+  mutate(name = "ACC") %>% 
+  select(name, points_per_60min, total_shot_attempts_per_60, shooting_perc, three_rate, free_throw_rate, three_point_perc, assist_perc)
+
+stat_profiles <- bind_rows(cbb_stat_profile, nba_stat_profile, nonp5_stat_profile, p5_stat_profile, acc_stat_profile, sec_stat_profile, b12_stat_profile, b10_stat_profile, pac12_stat_profile)
+```
+
+```{r}
+ggplot() + 
+  geom_bar(
+    data=stat_profiles %>% filter(), 
+    aes(x=reorder(name, -`total_shot_attempts_per_60`),
+        weight=`total_shot_attempts_per_60`)) + 
+  labs(
+    title="Top 10 Football Programs By Attendance", 
+    x="School", 
+    y="Attendance") + 
+  theme_minimal()
+```
+
+
+
+think that the established thought is that nba is more aesthetically pleasing (which I’m going to interpret as more offense, more threes, better shooting, better execution)
+Think there’s a few stats I can look at, each to identify a different aspect
+if there is a difference, think it’s worth examining why that could be, if there isn’t, i think that’s even more interesting
+I’ll break it down further in the college ranks, how does it split for power 5 teams, for each conference, for the top 25 teams in wins over the timeframe im looking at
+can make it further a breakdown about the gaps in play for teams within cbb as well, do big ten teams perform differently than sunbelt teams even tho they probs face similar rates of competition
+will have a lot of interesting graphics and more segmented analysis to compensate for the somewhat simple question
+
+```{r}
+ByTeam <- CBBboxscores %>% 
+  group_by(TeamFull) %>% 
+  summarize(games = n(), wins = sum(wins), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG)) %>% 
+  arrange(desc(wins))
+```
+

@@ -81,7 +81,7 @@ wbb_rosters23 %>% group_by(secondary_position) %>% summarise(count = n()) %>% ar
 ```
 
 # Years Cleaning
-
+We downloaded the existing roster data and standardized the years. We classified everyone as a freshman, sophomore, junior, senior, graduate student, fifth year or sixth year. In addition, we have a separate column called redshirt that has a 1 if the original year classification included a mention of a redshirt. 
 ```{r}
 years_cleaned <- read_csv("https://raw.githubusercontent.com/dwillis/jour479x_fall_2022/main/data/yearscleaned.csv")
 
