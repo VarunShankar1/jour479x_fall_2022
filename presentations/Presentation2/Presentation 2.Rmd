@@ -41,7 +41,7 @@ CBBboxscores <- CBBboxscores %>%
   mutate(year = year(Date)) %>% 
   filter(year >= 2014, year <= 2018) 
 
-NBAboxscores <- read_csv("~/Documents/GitHub/jour479x_fall_2022/data/2012-18_officialBoxScore.csv") 
+NBAboxscores <- read_csv("https://github.com/VarunShankar1/jour479x_fall_2022/blob/main/presentations/Presentation2/2012-18_officialBoxScore.csv") 
 
 NBAboxscores <- NBAboxscores %>% mutate(year = year(gmDate)) %>% 
     filter(year >= 2014, year <= 2018)
