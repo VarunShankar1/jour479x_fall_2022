@@ -175,3 +175,19 @@ ByTeam <- CBBboxscores %>%
   arrange(desc(wins))
 ```
 
+```{r}
+P5ByTeam <- CBBboxscores %>% 
+  filter(Conference == p5) %>% 
+  group_by(TeamFull) %>% 
+  summarize(games = n(), wins = sum(wins), points_per_60min = sum(TeamScore)/games *(60/40), total_shot_attempts_per_60 = sum(TeamFGA)/games *(60/40), shooting_perc = sum(TeamFG)/sum(TeamFGA), three_rate = sum(Team3PA)/sum(TeamFGA), free_throw_rate = sum(TeamFTA)/sum(TeamFGA), three_point_perc = sum(Team3P)/sum(Team3PA), assist_perc = sum(TeamAssists)/sum(TeamFG)) %>% 
+  arrange(desc(wins))
+
+write.csv(P5ByTeam, "~/Documents/GitHub/jour479x_fall_2022/presentations/p5byteam.csv", row.names=TRUE)
+
+first_downs_fit <- lm(points_per_60min ~ total_shot_attempts_per_60, data = P5ByTeam)
+summary(first_downs_fit)
+
+first_downs_fit <- lm(points_per_60min ~ three_rate, data = P5ByTeam)
+summary(first_downs_fit)
+```
+
